@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Medi Care Hospital</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" onerror="this.onerror=null;this.href='../static/css/main.css';">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}" onerror="this.onerror=null;this.href='../static/css/auth.css';">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>">
+</head>
+<body>
+<div class="auth-bg"></div>
+<div id="toast-container"></div>
+
+<div class="auth-page">
+  <div class="auth-container">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🏥</div>
+      <div class="auth-logo-text">Medi Care</div>
+      <div class="auth-logo-sub">Advanced Hospital Management System</div>
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="loginTabBtn" onclick="showTab('login')">Sign In</button>
+        <button class="auth-tab" id="signupTabBtn" onclick="showTab('signup')">Sign Up</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <div id="loginForm">
+        <h2 class="auth-title">Welcome back 👋</h2>
+        <p class="auth-subtitle">Sign in to access your patient dashboard</p>
+
+        <div class="form-group">
+          <label class="form-label">Email / Username</label>
+          <div class="input-icon-wrapper">
+            <span class="input-icon">📧</span>
+            <input type="text" id="loginEmail" class="form-control" placeholder="Enter email or 'admin'" autocomplete="username">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-icon-wrapper">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="loginPassword" class="form-control" placeholder="Enter password" autocomplete="current-password">
+            <button type="button" class="password-toggle" onclick="togglePassword('loginPassword', this)">👁️</button>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-block btn-lg" id="loginBtn" onclick="handleLogin()">
+          <span class="btn-text">Sign In</span>
+          <span>→</span>
+        </button>
+
+        <div class="admin-note">
+          <strong>Admin Access:</strong> Username: <strong>admin</strong> / Password: <strong>admin123</strong>
+        </div>
+      </div>
+
+      <!-- SIGNUP FORM -->
+      <div id="signupForm">
+        <h2 class="auth-title">Create account 🎉</h2>
+        <p class="auth-subtitle">Register as a new patient</p>
+
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <div class="input-icon-wrapper">
+            <span class="input-icon">👤</span>
+            <input type="text" id="signupName" class="form-control" placeholder="Your full name">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email Address *</label>
+          <div class="input-icon-wrapper">
+            <span class="input-icon">📧</span>
+            <input type="email" id="signupEmail" class="form-control" placeholder="your@email.com">
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="tel" id="signupPhone" class="form-control" placeholder="+91 XXXXX XXXXX">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date of Birth</label>
+            <input type="date" id="signupDob" class="form-control">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Blood Group</label>
+          <select id="signupBlood" class="form-control">
+            <option value="">Select Blood Group</option>
+            <option>A+</option><option>A-</option>
+            <option>B+</option><option>B-</option>
+            <option>AB+</option><option>AB-</option>
+            <option>O+</option><option>O-</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password *</label>
+          <div class="input-icon-wrapper">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="signupPassword" class="form-control" placeholder="Min. 6 characters">
+            <button type="button" class="password-toggle" onclick="togglePassword('signupPassword', this)">👁️</button>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-block btn-lg" id="signupBtn" onclick="handleSignup()">
+          <span class="btn-text">Create Account</span>
+          <span>🎉</span>
+        </button>
+      </div>
+
+    </div>
+
+    <p class="auth-footer-note">
+      🔒 Your health data is encrypted and secure
+    </p>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+  const IS_FILE_MODE = window.location.protocol === 'file:';
+  const FLASK_BASE_URL = 'http://127.0.0.1:5000';
+
+  function appUrl(path) {
+    const raw = (path || '').toString().trim();
+    if (/^https?:\/\//i.test(raw)) return raw;
+    const normalized = raw.startsWith('/') ? raw : `/${raw}`;
+    return IS_FILE_MODE ? `${FLASK_BASE_URL}${normalized}` : normalized;
+  }
+
+  function ensureServerMode() {
+    if (!IS_FILE_MODE) return true;
+    showToast('Please open via Flask server. Redirecting to login page...', 'warning');
+    setTimeout(() => {
+      window.location.href = appUrl('/login');
+    }, 250);
+    return false;
+  }
+
+  if (IS_FILE_MODE) {
+    // Prevent broken file-system navigation when template is opened directly.
+    const warning = document.createElement('div');
+    warning.className = 'admin-note';
+    warning.innerHTML = '<strong>Run with Flask:</strong> Open <strong>http://127.0.0.1:5000/login</strong> instead of opening this HTML file directly.';
+    document.querySelector('.auth-container')?.prepend(warning);
+
+    // Auto-fix local file usage to avoid file-not-found redirects like /dashboard on disk.
+    setTimeout(() => {
+      window.location.href = appUrl('/login');
+    }, 900);
+  }
+
+  function showTab(tab) {
+    document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('signupForm').style.display = tab === 'signup' ? 'block' : 'none';
+    document.getElementById('loginTabBtn').classList.toggle('active', tab === 'login');
+    document.getElementById('signupTabBtn').classList.toggle('active', tab === 'signup');
+  }
+
+  function togglePassword(id, btn) {
+    const input = document.getElementById(id);
+    const isText = input.type === 'text';
+    input.type = isText ? 'password' : 'text';
+    btn.textContent = isText ? '👁️' : '🙈';
+  }
+
+  async function handleLogin() {
+    if (!ensureServerMode()) return;
+
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value.trim();
+
+    if (!email || !password) {
+      showToast('Please fill in all fields', 'warning');
+      return;
+    }
+
+    const btn = document.getElementById('loginBtn');
+    btn.innerHTML = '<div class="spinner"></div> Signing in...';
+    btn.disabled = true;
+
+    const form = new FormData();
+    form.append('email', email);
+    form.append('password', password);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+    try {
+      const res = await fetch(appUrl('/login'), {
+        method: 'POST',
+        body: form,
+        signal: controller.signal
+      });
+
+      if (res.redirected) {
+        showToast('Login successful! Redirecting...', 'success');
+        window.location.href = res.url;
+        return;
+      }
+
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        data = { success: false, message: 'Unexpected server response' };
+      }
+
+      if (!res.ok || data.success === false) {
+        showToast(data.message || 'Invalid credentials', 'error');
+        return;
+      }
+
+      window.location.href = appUrl('/dashboard');
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        showToast('Login is taking too long. Please try again.', 'warning');
+      } else {
+        showToast('Network error. Check server and retry.', 'error');
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      btn.innerHTML = '<span class="btn-text">Sign In</span><span>→</span>';
+      btn.disabled = false;
+    }
+  }
+
+  async function handleSignup() {
+    if (!ensureServerMode()) return;
+
+    const name = document.getElementById('signupName').value.trim();
+    const email = document.getElementById('signupEmail').value.trim();
+    const password = document.getElementById('signupPassword').value.trim();
+
+    if (!name || !email || !password) {
+      showToast('Please fill required fields (name, email, password)', 'warning');
+      return;
+    }
+    if (password.length < 6) {
+      showToast('Password must be at least 6 characters', 'warning');
+      return;
+    }
+
+    const btn = document.getElementById('signupBtn');
+    btn.innerHTML = '<div class="spinner"></div> Creating...';
+    btn.disabled = true;
+
+    const form = new FormData();
+    form.append('name', name);
+    form.append('email', email);
+    form.append('password', password);
+    form.append('phone', document.getElementById('signupPhone').value);
+    form.append('dob', document.getElementById('signupDob').value);
+    form.append('blood_group', document.getElementById('signupBlood').value);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+    try {
+      const res = await fetch(appUrl('/api/signup'), {
+        method: 'POST',
+        body: form,
+        signal: controller.signal
+      });
+
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        data = { success: false, message: 'Unexpected server response' };
+      }
+
+      if (res.ok && data.success) {
+        showToast(data.message, 'success');
+        const nextUrl = data.redirect || '/dashboard';
+        setTimeout(() => {
+          window.location.href = appUrl(nextUrl);
+        }, 700);
+      } else {
+        showToast(data.message || 'Signup failed. Please try again.', 'error');
+      }
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        showToast('Signup is taking too long. Please try again.', 'warning');
+      } else {
+        showToast('Network error. Check server and retry.', 'error');
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      btn.innerHTML = '<span class="btn-text">Create Account</span><span>🎉</span>';
+      btn.disabled = false;
+    }
+  }
+
+  // Enter key
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const loginVisible = document.getElementById('loginForm').style.display !== 'none';
+      if (loginVisible) handleLogin();
+      else handleSignup();
+    }
+  });
+</script>
+</body>
+</html>

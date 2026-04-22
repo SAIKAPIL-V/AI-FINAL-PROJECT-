@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %}Book Appointment — Medi Care{% endblock %}
+
+{% block content %}
+<div class="page-header fade-in">
+  <h1 class="page-title">Book <span>Appointment</span></h1>
+  <p class="page-subtitle">Schedule your visit with our specialists</p>
+</div>
+
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+  <!-- BOOKING FORM -->
+  <div style="flex:1; min-width:300px;">
+    <div class="card fade-in stagger-1" id="bookingCard">
+      <h3 style="font-family:var(--font-display); font-weight:700; margin-bottom:22px; font-size:1.1rem;">📋 Appointment Details</h3>
+
+      <div class="form-group">
+        <label class="form-label">Department *</label>
+        <select class="form-control" id="department" onchange="updateDoctors()">
+          <option value="">Select Department</option>
+          {% for dept in departments %}
+          <option value="{{ dept }}">{{ dept }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Consultation Fee</label>
+        <input type="text" class="form-control" id="consultationFee" value="Select a department" readonly>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Appointment Date *</label>
+        <input type="date" class="form-control" id="aptDate" min="">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Symptoms / Reason for Visit *</label>
+        <textarea class="form-control" id="symptoms" rows="4" placeholder="Describe your symptoms or reason for the appointment..."></textarea>
+      </div>
+
+      <button class="btn btn-primary btn-block btn-lg" id="bookBtn" onclick="bookAppointment()">
+        📅 Book Appointment
+      </button>
+    </div>
+
+    <!-- CONFIRMATION CARD (hidden initially) -->
+    <div id="confirmationCard" style="display:none;">
+      <div class="confirmation-card">
+        <div class="confirmation-icon">✅</div>
+        <h2 style="font-family:var(--font-display); font-size:1.3rem; font-weight:800; margin-bottom:8px; color:var(--accent-green);">Appointment Confirmed!</h2>
+        <p style="color:var(--text-secondary); margin-bottom:24px; font-size:0.9rem;">Your appointment has been scheduled successfully</p>
+
+        <div style="background:var(--glass); border:1px solid var(--glass-border); border-radius:12px; padding:20px; text-align:left; margin-bottom:20px;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+            <div>
+              <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Appointment ID</div>
+              <div id="confId" style="font-family:var(--font-display); font-weight:700; color:var(--accent-cyan);"></div>
+            </div>
+            <div>
+              <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Department</div>
+              <div id="confDept" style="font-weight:600;"></div>
+            </div>
+            <div>
+              <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Doctor</div>
+              <div id="confDoctor" style="font-weight:600;"></div>
+            </div>
+            <div>
+              <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Date</div>
+              <div id="confDate" style="font-weight:600;"></div>
+            </div>
+            <div>
+              <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Time Slot</div>
+              <div id="confTime" style="font-weight:600; color:var(--accent-blue);"></div>
+            </div>
+            <div>
+              <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Status</div>
+              <span class="badge badge-green">✅ Scheduled</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <a href="/appointments" class="btn btn-primary" style="flex:1;">View Appointments</a>
+          <button class="btn btn-secondary" style="flex:1;" onclick="resetBooking()">Book Another</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEPARTMENT INFO -->
+  <div style="width:280px; flex-shrink:0; display:flex; flex-direction:column; gap:14px;" class="fade-in stagger-2">
+    <div class="card" style="padding:18px;">
+      <h4 style="font-family:var(--font-display); font-size:0.9rem; font-weight:700; margin-bottom:14px;">🏥 Our Departments</h4>
+      <div style="display:flex; flex-direction:column; gap:8px;" id="deptList">
+        {% set icons = {'General': '🩺', 'Cardiology': '💔', 'Orthopedics': '🦴', 'Neurology': '🧠', 'Pediatrics': '👶', 'ENT': '👂'} %}
+        {% for dept in departments %}
+        <div class="dept-item" data-dept="{{ dept }}" style="padding:10px 12px; background:var(--glass); border:1px solid var(--glass-border); border-radius:10px; cursor:pointer; transition:var(--transition); display:flex; align-items:center; gap:8px; justify-content:space-between;" onclick="selectDept('{{ dept }}')">
+          <span style="display:flex; align-items:center; gap:8px;">
+            <span>{{ icons.get(dept, '🏥') }}</span>
+            <span style="font-size:0.85rem; font-weight:500;">{{ dept }}</span>
+          </span>
+          <strong style="font-size:0.8rem; color:var(--accent-cyan);">₹{{ consultation_fees.get(dept, 200) }}</strong>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card" style="padding:18px;">
+      <h4 style="font-family:var(--font-display); font-size:0.9rem; font-weight:700; margin-bottom:10px;">⏰ Available Hours</h4>
+      <div style="font-size:0.82rem; color:var(--text-secondary); line-height:1.8;">
+        <div>🕖 Daily Booking Window: 7:00 AM – 9:00 PM</div>
+        <div>🍽 Lunch (Doctor A): 12:00 PM – 1:00 PM</div>
+        <div>🍽 Lunch (Doctor B): 1:00 PM – 2:00 PM</div>
+        <div>⏱️ Default Slot Duration: {{ default_slot_duration }} mins</div>
+        <div>👨‍⚕️ Max patients per doctor/day: dynamic by doctor profile</div>
+        <div style="color:var(--accent-yellow);">⚠️ Same-day late-night booking is blocked. Please book for tomorrow.</div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:18px; background:linear-gradient(135deg, rgba(0,229,255,0.06), rgba(74,158,255,0.04));">
+      <h4 style="font-family:var(--font-display); font-size:0.9rem; font-weight:700; margin-bottom:8px;">💰 Fee Structure</h4>
+      <div style="font-size:0.82rem; color:var(--text-secondary);">
+        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--glass-border);">
+          <span>Consultation Fee</span><strong style="color:var(--accent-cyan);">₹200</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--glass-border);">
+          <span>Medicine Cost</span><strong style="color:var(--accent-blue);">₹50–₹500</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; padding:6px 0;">
+          <span>Emergency Consult</span><strong style="color:var(--accent-red);">₹500</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const consultationFees = {{ consultation_fees|tojson }};
+
+  // Set min date to today and preselect tomorrow outside booking window.
+  const now = new Date();
+  const isBookingOpenNow = now.getHours() >= 7 && now.getHours() < 21;
+  const today = now.toISOString().split('T')[0];
+  document.getElementById('aptDate').min = today;
+  if (isBookingOpenNow) {
+    document.getElementById('aptDate').value = today;
+  } else {
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    document.getElementById('aptDate').value = tomorrow.toISOString().split('T')[0];
+    setTimeout(() => showToast('Doctors are unavailable now for today. Please book for tomorrow.', 'warning', 4500), 250);
+  }
+
+  function selectDept(dept) {
+    const departmentEl = document.getElementById('department');
+    if (!departmentEl) return;
+    departmentEl.value = dept;
+    document.getElementById('consultationFee').value = `₹${consultationFees[dept] || 200}`;
+    document.querySelectorAll('.dept-item').forEach(el => {
+      el.style.borderColor = el.dataset.dept === dept ? 'var(--accent-cyan)' : 'var(--glass-border)';
+      el.style.color = el.dataset.dept === dept ? 'var(--accent-cyan)' : '';
+    });
+  }
+
+  function updateDoctors() {
+    const dept = document.getElementById('department').value;
+    if (!dept) {
+      document.getElementById('consultationFee').value = 'Select a department';
+      document.querySelectorAll('.dept-item').forEach(el => {
+        el.style.borderColor = 'var(--glass-border)';
+        el.style.color = '';
+      });
+      return;
+    }
+    selectDept(dept);
+  }
+
+  async function bookAppointment() {
+    const department = document.getElementById('department').value;
+    const date = document.getElementById('aptDate').value;
+    const symptoms = document.getElementById('symptoms').value.trim();
+
+    if (!department) { showToast('Please select a department', 'warning'); return; }
+    if (!date) { showToast('Please select a date', 'warning'); return; }
+    if (!symptoms) { showToast('Please describe your symptoms', 'warning'); return; }
+
+    const btn = document.getElementById('bookBtn');
+    btn.innerHTML = '<div class="spinner"></div> Booking...';
+    btn.disabled = true;
+
+    const form = new FormData();
+    form.append('department', department);
+    form.append('date', date);
+    form.append('symptoms', symptoms);
+
+    try {
+      const res = await fetch('/book-appointment', { method: 'POST', body: form });
+
+      if (res.redirected) {
+        window.location.href = res.url;
+        return;
+      }
+
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        data = { success: false, message: 'Unexpected server response' };
+      }
+
+      if (data.success) {
+        document.getElementById('confId').textContent = data.appointment_id;
+        document.getElementById('confDept').textContent = data.department;
+        document.getElementById('confDoctor').textContent = data.doctor;
+        document.getElementById('confDate').textContent = data.date;
+        document.getElementById('confTime').textContent = data.time_slot;
+
+        document.getElementById('bookingCard').style.display = 'none';
+        document.getElementById('confirmationCard').style.display = 'block';
+        showToast('Appointment booked successfully!', 'success');
+      } else {
+        if (data.suggested_date) {
+          document.getElementById('aptDate').value = data.suggested_date;
+        }
+        showToast(data.message || 'Booking failed', 'error');
+      }
+    } catch {
+      showToast('Network error while booking. Please retry.', 'error');
+    } finally {
+      btn.innerHTML = '📅 Book Appointment';
+      btn.disabled = false;
+    }
+  }
+
+  function resetBooking() {
+    document.getElementById('bookingCard').style.display = 'block';
+    document.getElementById('confirmationCard').style.display = 'none';
+    document.getElementById('department').value = '';
+    document.getElementById('symptoms').value = '';
+    const btn = document.getElementById('bookBtn');
+    btn.innerHTML = '📅 Book Appointment';
+    btn.disabled = false;
+  }
+</script>
+{% endblock %}

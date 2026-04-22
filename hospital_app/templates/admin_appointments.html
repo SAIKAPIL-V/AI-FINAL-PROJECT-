@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Manage Appointments — Admin{% endblock %}
+
+{% block content %}
+<div class="page-header fade-in">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div>
+      <h1 class="page-title">Manage <span>Appointments</span></h1>
+      <p class="page-subtitle">{{ appointments|length }} appointment(s) total</p>
+    </div>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="card fade-in" style="margin-bottom:20px; padding:16px;">
+  <form method="GET" action="/admin/appointments" style="display:flex; gap:10px; align-items:center;">
+    <div class="search-bar" style="flex:1; max-width:100%;">
+      <span class="search-icon">🔍</span>
+      <input type="text" name="search" value="{{ search }}" placeholder="Search by patient name, appointment ID, or department..." style="background:none; border:none; outline:none; color:var(--text-primary); font-family:var(--font-body); font-size:0.875rem; flex:1;">
+    </div>
+    <button type="submit" class="btn btn-primary">Search</button>
+    {% if search %}
+    <a href="/admin/appointments" class="btn btn-secondary">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+{% if appointments %}
+<div class="table-container fade-in" style="overflow-x:auto;">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Apt. ID</th>
+        <th>Patient</th>
+        <th>Department</th>
+        <th>Doctor</th>
+        <th>Date</th>
+        <th>Time</th>
+        <th>Symptoms</th>
+        <th>Prescription</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for apt in appointments %}
+      <tr id="apt-row-{{ apt.id }}">
+        <td><code style="color:var(--accent-cyan); font-size:0.78rem; background:rgba(0,229,255,0.08); padding:3px 7px; border-radius:5px;">{{ apt.appointment_id }}</code></td>
+        <td>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="avatar" style="width:28px; height:28px; font-size:0.72rem; border-radius:8px;">{{ apt.patient_name[0] if apt.patient_name else '?' }}</div>
+            <div>
+              <div style="font-weight:500; font-size:0.875rem;">{{ apt.patient_name }}</div>
+              <div style="font-size:0.72rem; color:var(--text-muted);">{{ apt.email or '' }}</div>
+            </div>
+          </div>
+        </td>
+        <td style="font-size:0.875rem; font-weight:500;">{{ apt.department }}</td>
+        <td style="font-size:0.85rem; color:var(--text-secondary);">{{ apt.doctor }}</td>
+        <td style="font-size:0.85rem;">{{ apt.date }}</td>
+        <td><span class="badge badge-blue" style="font-size:0.72rem;">{{ apt.time_slot }}</span></td>
+        <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.82rem; color:var(--text-secondary);" title="{{ apt.symptoms }}">
+          {{ apt.symptoms or '—' }}
+        </td>
+        <td style="max-width:210px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.82rem; color:var(--text-secondary);" title="{{ apt.medicines or 'No medicine written yet' }}">
+          {% if apt.diagnosis %}
+            <strong style="color:var(--accent-cyan);">{{ apt.diagnosis }}</strong> — {{ apt.medicines }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>
+          <span class="badge {% if apt.status == 'Completed' %}badge-green{% else %}badge-yellow{% endif %}" style="font-size:0.72rem;">
+            {{ apt.status }}
+          </span>
+        </td>
+        <td>
+          {% if apt.status == 'Completed' %}
+          <a class="btn btn-secondary btn-sm" href="/admin/chat/{{ apt.appointment_id }}" title="Open consultation chat">💬 Chat</a>
+          {% endif %}
+          {% if apt.status != 'Completed' %}
+          <button class="btn btn-primary btn-sm"
+                  onclick="completeConsultation({{ apt.id }}, '{{ apt.appointment_id }}')"
+                  title="Complete consultation and add medicine bill">
+            ✅ Complete
+          </button>
+          {% endif %}
+          <button class="btn btn-danger btn-sm"
+                  onclick="deleteRecord('/admin/delete-appointment/{{ apt.id }}', 'apt-row-{{ apt.id }}', 'Delete this appointment and related records?')">
+            🗑️
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card fade-in">
+  <div class="empty-state">
+    <div class="empty-icon">📅</div>
+    <h3>{% if search %}No appointments found for "{{ search }}"{% else %}No appointments yet{% endif %}</h3>
+  </div>
+</div>
+{% endif %}
+
+<script>
+  async function completeConsultation(aptId, aptCode) {
+    const input = prompt(`Enter medicine cost for ${aptCode} (INR):`, '150');
+    if (input === null) return;
+
+    const medicineCost = Number(input);
+    if (!Number.isFinite(medicineCost) || medicineCost < 0) {
+      showToast('Please enter a valid medicine cost', 'warning');
+      return;
+    }
+
+    const form = new FormData();
+    form.append('medicine_cost', String(Math.round(medicineCost)));
+
+    try {
+      const res = await fetch(`/admin/complete-consultation/${aptId}`, {
+        method: 'POST',
+        body: form
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.message || 'Failed to complete consultation', 'error');
+        return;
+      }
+
+      showToast(data.message, 'success');
+      setTimeout(() => window.location.reload(), 600);
+    } catch {
+      showToast('Network error while completing consultation', 'error');
+    }
+  }
+</script>
+{% endblock %}

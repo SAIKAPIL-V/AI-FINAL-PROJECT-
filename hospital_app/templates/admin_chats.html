@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Chat Monitoring — Admin{% endblock %}
+
+{% block content %}
+<div class="page-header fade-in">
+  <h1 class="page-title">Chat <span>Monitoring</span></h1>
+  <p class="page-subtitle">Track patient-doctor chat windows, requests, and reported messages</p>
+</div>
+
+<div class="card fade-in" style="margin-bottom:16px;">
+  <h3 style="font-family:var(--font-display); margin-bottom:12px;">📝 Pending Access Requests</h3>
+  {% if pending_requests %}
+  <div style="display:flex; flex-direction:column; gap:10px;">
+    {% for r in pending_requests %}
+    <div style="border:1px solid var(--glass-border); border-radius:10px; padding:12px; background:var(--glass);">
+      <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+        <div style="font-size:0.85rem; color:var(--text-secondary);">
+          <strong style="color:var(--text-primary);">{{ r.patient_name }}</strong>
+          requested access for
+          <code>{{ r.appointment_id }}</code>
+          ({{ r.department }} / {{ r.doctor }})
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-top:4px;">{{ r.created_at }}</div>
+          {% if r.request_note %}
+          <div style="margin-top:6px;">Note: {{ r.request_note }}</div>
+          {% endif %}
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <form method="POST" action="/admin/chat-request/{{ r.id }}/approve">
+            <button class="btn btn-primary btn-sm" type="submit">Approve 3 mins</button>
+          </form>
+          <form method="POST" action="/admin/chat-request/{{ r.id }}/reject">
+            <button class="btn btn-danger btn-sm" type="submit">Reject</button>
+          </form>
+          <a class="btn btn-secondary btn-sm" href="/admin/chat/{{ r.appointment_id }}">Open Chat</a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="font-size:0.84rem; color:var(--text-muted);">No pending access requests.</div>
+  {% endif %}
+</div>
+
+<div class="table-container fade-in">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Appointment</th>
+        <th>Patient</th>
+        <th>Doctor</th>
+        <th>Status</th>
+        <th>Messages</th>
+        <th>Pending Requests</th>
+        <th>Last Message</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in sessions %}
+      <tr>
+        <td><code>{{ s.appointment_id }}</code></td>
+        <td>{{ s.patient_name or '—' }}</td>
+        <td>{{ s.doctor or '—' }}</td>
+        <td>
+          <span class="badge {% if s.status == 'open' %}badge-green{% elif s.status == 'paused' %}badge-yellow{% else %}badge-red{% endif %}">
+            {{ s.status|upper }}
+          </span>
+        </td>
+        <td>{{ s.message_count or 0 }}</td>
+        <td>{{ s.pending_requests or 0 }}</td>
+        <td style="max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-secondary);">
+          {{ s.last_message or '—' }}
+        </td>
+        <td><a class="btn btn-secondary btn-sm" href="/admin/chat/{{ s.appointment_id }}">View</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

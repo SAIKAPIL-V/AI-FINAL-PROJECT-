@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="refresh" content="2;url=http://127.0.0.1:5000/login">
+	<title>Redirecting to Login</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" onerror="this.onerror=null;this.href='../static/css/main.css';">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}" onerror="this.onerror=null;this.href='../static/css/auth.css';">
+	<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>">
+</head>
+<body>
+	<div class="auth-bg"></div>
+	<main class="redirect-shell">
+		<section class="redirect-card">
+			<div class="redirect-spinner" aria-hidden="true"></div>
+			<h1 class="redirect-title">Taking you to Sign In</h1>
+			<p class="redirect-subtitle">The signup route now redirects to the unified login/signup page.</p>
+			<a href="/login" class="redirect-link">Go now</a>
+		</section>
+	</main>
+
+	<script>
+		const baseUrl = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : '';
+		setTimeout(() => {
+			window.location.href = `${baseUrl}/login`;
+		}, 1800);
+	</script>
+</body>
+</html>

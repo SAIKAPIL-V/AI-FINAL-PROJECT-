@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Appointments — Medi Care{% endblock %}
+
+{% block content %}
+<div class="page-header fade-in">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div>
+      <h1 class="page-title">My <span>Appointments</span></h1>
+      <p class="page-subtitle">{{ appointments|length }} total appointment(s)</p>
+    </div>
+    <a href="/book-appointment" class="btn btn-primary">📅 Book New</a>
+  </div>
+</div>
+
+{% if appointments %}
+<div class="table-container fade-in">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Appointment ID</th>
+        <th>Department</th>
+        <th>Doctor</th>
+        <th>Date</th>
+        <th>Time</th>
+        <th>Symptoms</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for apt in appointments %}
+      <tr>
+        <td><code style="color:var(--accent-cyan); background:rgba(0,229,255,0.08); padding:3px 8px; border-radius:6px; font-size:0.82rem;">{{ apt.appointment_id }}</code></td>
+        <td>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span>🏥</span>
+            <span style="font-weight:500;">{{ apt.department }}</span>
+          </div>
+        </td>
+        <td style="color:var(--text-secondary);">{{ apt.doctor }}</td>
+        <td>{{ apt.date }}</td>
+        <td><span class="badge badge-blue">{{ apt.time_slot }}</span></td>
+        <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-secondary);" title="{{ apt.symptoms }}">{{ apt.symptoms }}</td>
+        <td><span class="badge badge-green">{{ apt.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card fade-in">
+  <div class="empty-state">
+    <div class="empty-icon">📅</div>
+    <h3>No appointments found</h3>
+    <p>You haven't booked any appointments yet</p>
+    <a href="/book-appointment" class="btn btn-primary" style="margin-top:16px;">Book Your First Appointment</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

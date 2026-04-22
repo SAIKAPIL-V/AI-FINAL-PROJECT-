@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% block title %}Consultation Doubt Chat — Medi Care{% endblock %}
+
+{% block content %}
+<div class="page-header fade-in">
+  <h1 class="page-title">Consultation <span>Doubt Chat</span></h1>
+  <p class="page-subtitle">
+    Appointment {{ chat_data.appointment.appointment_id }} | {{ chat_data.appointment.department }}
+  </p>
+</div>
+
+<div id="chatRoot"
+  data-appointment-id="{{ chat_data.appointment.appointment_id }}"
+  data-view-role="{{ view_role }}"></div>
+<script id="chatDataPayload" type="application/json">{{ chat_data|tojson }}</script>
+
+<div class="grid-2" style="align-items:start;">
+  <div class="card fade-in" style="padding:18px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+      <h3 style="margin:0; font-family:var(--font-display); font-size:1rem;">💬 Secure Consultation Chat</h3>
+      <span id="chatStatusBadge" class="badge badge-yellow">Loading...</span>
+    </div>
+    <p id="chatMetaText" style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:12px;"></p>
+
+    <div id="chatMessages" style="height:360px; overflow-y:auto; border:1px solid var(--glass-border); border-radius:12px; padding:12px; background:rgba(255,255,255,0.02);"></div>
+
+    <div id="chatControls" style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;">
+      <div style="flex:1; min-width:220px;">
+        <label class="form-label" style="margin-bottom:6px;">Message</label>
+        <textarea id="chatInput" class="form-control" rows="2" maxlength="500" placeholder="Type your question or reply..."></textarea>
+      </div>
+      <button id="sendBtn" class="btn btn-primary" type="button">Send</button>
+    </div>
+
+    {% if view_role == 'patient' %}
+    <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+      <button id="requestAccessBtn" class="btn btn-secondary btn-sm" type="button">Request 3-min Access from Admin</button>
+      <span id="requestHint" style="font-size:0.78rem; color:var(--text-muted);"></span>
+    </div>
+    {% endif %}
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:14px;">
+    <div class="card fade-in" style="padding:18px;">
+      <h4 style="font-family:var(--font-display); margin-bottom:10px;">🧾 Consultation Details</h4>
+      <div style="font-size:0.84rem; line-height:1.8; color:var(--text-secondary);">
+        <div><strong>Patient:</strong> {{ chat_data.appointment.patient_name }}</div>
+        <div><strong>Doctor:</strong> {{ chat_data.appointment.doctor }}</div>
+        <div><strong>Diagnosis:</strong> {{ chat_data.appointment.diagnosis or '—' }}</div>
+      </div>
+    </div>
+
+    <div class="card fade-in" style="padding:18px;">
+      <h4 style="font-family:var(--font-display); margin-bottom:10px;">💊 Medicines</h4>
+      <div style="font-size:0.84rem; color:var(--text-secondary); white-space:pre-wrap;">{{ chat_data.appointment.medicines or 'No medicine details' }}</div>
+    </div>
+
+    <div class="card fade-in" style="padding:18px;">
+      <h4 style="font-family:var(--font-display); margin-bottom:10px;">⏱ Chat Policy</h4>
+      <div style="font-size:0.82rem; color:var(--text-secondary); line-height:1.7;">
+        <div>• Chat opens for 3 minutes after consultation.</div>
+        <div>• If no messages for 3 minutes, it auto-pauses.</div>
+        <div>• Patient can request access within 1 hour.</div>
+        <div>• Doctor/Admin can report vulgar content.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const chatRootEl = document.getElementById('chatRoot');
+  const appointmentId = chatRootEl ? chatRootEl.dataset.appointmentId : '';
+  const viewRole = chatRootEl ? chatRootEl.dataset.viewRole : '';
+  let stateData = JSON.parse(document.getElementById('chatDataPayload').textContent || '{}');
+
+  const messagesEl = document.getElementById('chatMessages');
+  const statusBadgeEl = document.getElementById('chatStatusBadge');
+  const metaTextEl = document.getElementById('chatMetaText');
+  const chatInputEl = document.getElementById('chatInput');
+  const sendBtnEl = document.getElementById('sendBtn');
+  const requestBtnEl = document.getElementById('requestAccessBtn');
+  const requestHintEl = document.getElementById('requestHint');
+
+  function esc(text) {
+    return String(text || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function fmtDateTime(dt) {
+    if (!dt) return '—';
+    const d = new Date(dt.replace(' ', 'T'));
+    return d.toLocaleString('en-IN', { hour12: true });
+  }
+
+  function setStatusBadge(status) {
+    if (status === 'open') {
+      statusBadgeEl.className = 'badge badge-green';
+      statusBadgeEl.textContent = 'OPEN';
+      return;
+    }
+    if (status === 'paused') {
+      statusBadgeEl.className = 'badge badge-yellow';
+      statusBadgeEl.textContent = 'PAUSED';
+      return;
+    }
+    statusBadgeEl.className = 'badge badge-red';
+    statusBadgeEl.textContent = 'UNAVAILABLE';
+  }
+
+  function renderMessageRow(m) {
+    const align = m.sender_role === viewRole ? 'flex-end' : 'flex-start';
+    const bg = m.sender_role === 'patient' ? 'rgba(74,158,255,0.10)' : (m.sender_role === 'doctor' ? 'rgba(16,185,129,0.10)' : 'rgba(248,113,113,0.10)');
+    const roleLabel = m.sender_role.charAt(0).toUpperCase() + m.sender_role.slice(1);
+    const reportControls = m.can_report
+      ? `<button class="btn btn-danger btn-sm" type="button" onclick="reportMessage(${m.id})">Report</button>`
+      : '';
+    const reportInfo = m.is_reported
+      ? `<div style="font-size:0.74rem; color:var(--accent-red); margin-top:4px;">Reported by ${esc(m.reported_by || '')}${m.reported_reason ? ': ' + esc(m.reported_reason) : ''}</div>`
+      : '';
+
+    return `
+      <div style="display:flex; justify-content:${align}; margin-bottom:10px;">
+        <div style="max-width:84%; background:${bg}; border:1px solid var(--glass-border); border-radius:10px; padding:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:4px;">
+            <strong style="font-size:0.75rem; color:var(--text-muted);">${roleLabel}</strong>
+            <span style="font-size:0.72rem; color:var(--text-muted);">${fmtDateTime(m.created_at)}</span>
+          </div>
+          <div style="font-size:0.86rem; white-space:pre-wrap;">${esc(m.message)}</div>
+          <div style="margin-top:6px; display:flex; justify-content:flex-end;">${reportControls}</div>
+          ${reportInfo}
+        </div>
+      </div>
+    `;
+  }
+
+  function refreshUi() {
+    const cs = stateData.chat_session;
+    setStatusBadge(cs.status);
+
+    let meta = `Opened: ${fmtDateTime(cs.opened_at)} | Auto-pause at: ${fmtDateTime(cs.expires_at)}`;
+    if (cs.request_deadline) {
+      meta += ` | Request until: ${fmtDateTime(cs.request_deadline)}`;
+    }
+    metaTextEl.textContent = meta;
+
+    messagesEl.innerHTML = stateData.messages.map(renderMessageRow).join('');
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    const canSend = cs.can_send;
+    chatInputEl.disabled = !canSend;
+    sendBtnEl.disabled = !canSend;
+    sendBtnEl.textContent = canSend ? 'Send' : 'Paused';
+
+    if (requestBtnEl) {
+      requestBtnEl.disabled = !cs.can_request_access;
+      requestHintEl.textContent = cs.pending_request
+        ? 'Request pending admin review.'
+        : (cs.can_request_access ? 'You can request 3-minute access.' : 'Access request unavailable now.');
+    }
+  }
+
+  async function loadState() {
+    try {
+      const res = await fetch(`/api/consultation-chat/${encodeURIComponent(appointmentId)}/state`);
+      const data = await res.json();
+      if (!res.ok || !data.success) return;
+      stateData = data.data;
+      refreshUi();
+    } catch {
+      // Keep silent on polling failures.
+    }
+  }
+
+  async function sendMessage() {
+    const msg = (chatInputEl.value || '').trim();
+    if (!msg) return;
+
+    sendBtnEl.disabled = true;
+    try {
+      const res = await fetch(`/api/consultation-chat/${encodeURIComponent(appointmentId)}/message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.message || 'Could not send message', 'warning');
+        return;
+      }
+      chatInputEl.value = '';
+      await loadState();
+    } catch {
+      showToast('Network error while sending message', 'error');
+    } finally {
+      sendBtnEl.disabled = false;
+    }
+  }
+
+  async function requestAccess() {
+    const note = prompt('Optional note for admin (why access needed):', 'Need to clarify medicines');
+    if (note === null) return;
+
+    try {
+      const res = await fetch(`/api/consultation-chat/${encodeURIComponent(appointmentId)}/request-access`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.message || 'Request failed', 'warning');
+        return;
+      }
+      showToast(data.message || 'Request sent', 'success');
+      await loadState();
+    } catch {
+      showToast('Network error while requesting access', 'error');
+    }
+  }
+
+  async function reportMessage(messageId) {
+    const reason = prompt('Reason for report (optional):', 'Vulgar content');
+    if (reason === null) return;
+
+    try {
+      const res = await fetch(`/api/consultation-chat/${encodeURIComponent(appointmentId)}/report-message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message_id: messageId, reason })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.message || 'Could not report message', 'warning');
+        return;
+      }
+      showToast(data.message || 'Reported', 'success');
+      await loadState();
+    } catch {
+      showToast('Network error while reporting', 'error');
+    }
+  }
+
+  sendBtnEl.addEventListener('click', sendMessage);
+  chatInputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  if (requestBtnEl) {
+    requestBtnEl.addEventListener('click', requestAccess);
+  }
+
+  refreshUi();
+  setInterval(loadState, 5000);
+</script>
+{% endblock %}

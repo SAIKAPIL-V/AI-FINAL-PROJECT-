@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Medi Care Hospital{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  {% block extra_css %}{% endblock %}
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>">
+</head>
+<body>
+<div class="bg-animated"></div>
+<div class="bg-blob-3"></div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a href="{% if session.get('is_admin') %}/admin{% elif session.get('is_doctor') %}/doctor{% else %}/dashboard{% endif %}" class="navbar-brand">
+    <div class="brand-icon">🏥</div>
+    <span class="brand-text">Medi Care</span>
+  </a>
+
+  <ul class="navbar-nav" id="navLinks">
+    {% if session.get('is_admin') %}
+    <li><a href="/admin" class="nav-link">📊 Dashboard</a></li>
+    <li><a href="/admin/doctors" class="nav-link">🩺 Doctors</a></li>
+    <li><a href="/admin/patients" class="nav-link">👥 Patients</a></li>
+    <li><a href="/admin/appointments" class="nav-link">📅 Appointments</a></li>
+    <li><a href="/admin/chats" class="nav-link">💬 Chats</a></li>
+    {% elif session.get('is_doctor') %}
+    <li><a href="/doctor" class="nav-link">🩺 My Appointments</a></li>
+    {% else %}
+    <li><a href="/dashboard" class="nav-link">🏠 Home</a></li>
+    <li><a href="/chatbot" class="nav-link">🤖 AI Chatbot</a></li>
+    <li><a href="/book-appointment" class="nav-link">📅 Book</a></li>
+    {% endif %}
+  </ul>
+
+  <div class="navbar-actions">
+    <div id="liveClock" class="badge badge-blue" style="padding:8px 10px; font-size:0.74rem; min-width:128px; text-align:center;">--:--:--</div>
+    <div id="bookingStatus" class="badge badge-yellow" style="padding:8px 10px; font-size:0.74rem;">Checking hours...</div>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="avatar">{{ session.get('user_name', 'U')[0].upper() }}</div>
+      <span style="font-size:0.85rem;color:var(--text-secondary);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ session.get('user_name', '') }}</span>
+    </div>
+    <a href="/logout" class="btn btn-secondary btn-sm">Logout</a>
+  </div>
+</nav>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    {% if session.get('is_admin') %}
+    <p class="sidebar-section-title">Admin Panel</p>
+    <a href="/admin" class="sidebar-link"><span class="icon">📊</span><span>Dashboard</span></a>
+    <a href="/admin/doctors" class="sidebar-link"><span class="icon">🩺</span><span>Doctors</span></a>
+    <a href="/admin/patients" class="sidebar-link"><span class="icon">👥</span><span>All Patients</span></a>
+    <a href="/admin/appointments" class="sidebar-link"><span class="icon">📅</span><span>Appointments</span></a>
+    <a href="/admin/chats" class="sidebar-link"><span class="icon">💬</span><span>Chat Monitor</span></a>
+    {% elif session.get('is_doctor') %}
+    <p class="sidebar-section-title">Doctor Portal</p>
+    <a href="/doctor" class="sidebar-link"><span class="icon">🩺</span><span>My Appointments</span></a>
+    {% else %}
+    <p class="sidebar-section-title">Patient Portal</p>
+    <a href="/dashboard" class="sidebar-link"><span class="icon">🏠</span><span>Dashboard</span></a>
+    <a href="/chatbot" class="sidebar-link"><span class="icon">🤖</span><span>AI Chatbot</span></a>
+    <a href="/book-appointment" class="sidebar-link"><span class="icon">📅</span><span>Book Appointment</span></a>
+    <p class="sidebar-section-title">Records</p>
+    <a href="/appointments" class="sidebar-link"><span class="icon">🗓️</span><span>Appointments</span></a>
+    <a href="/prescriptions" class="sidebar-link"><span class="icon">💊</span><span>Prescriptions</span></a>
+    <a href="/billing" class="sidebar-link"><span class="icon">💳</span><span>Billing</span></a>
+    {% endif %}
+
+    <div style="position:absolute; bottom:20px; left:16px; right:16px;">
+      <a href="/logout" class="sidebar-link" style="color:var(--accent-red);">
+        <span class="icon">🚪</span><span>Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<!-- EMERGENCY FAB -->
+<button class="emergency-fab" onclick="showEmergencyModal()" title="Emergency Help">
+  🚨
+  <span class="emergency-fab-label">Emergency 108</span>
+</button>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

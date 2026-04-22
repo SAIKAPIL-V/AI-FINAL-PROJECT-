@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Medi Care{% endblock %}
+
+{% block content %}
+<div class="page-header fade-in">
+  <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+    <div>
+      <h1 class="page-title">Good {% if now %}{% endif %} Day, <span>{{ user.name.split()[0] if user else 'Patient' }}</span> 👋</h1>
+      <p class="page-subtitle">Here's your health overview</p>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <a href="/chatbot" class="btn btn-secondary">🤖 AI Chatbot</a>
+      <a href="/book-appointment" class="btn btn-primary">📅 Book Appointment</a>
+    </div>
+  </div>
+</div>
+
+<!-- PATIENT INFO CARD -->
+{% if user %}
+<div class="card fade-in stagger-1" style="margin-bottom:24px;">
+  <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+    <div style="width:64px; height:64px; border-radius:18px; background:var(--gradient-accent); display:flex; align-items:center; justify-content:center; font-size:26px; font-family:var(--font-display); font-weight:800; color:#050d1a; flex-shrink:0;">
+      {{ user.name[0].upper() }}
+    </div>
+    <div style="flex:1; min-width:200px;">
+      <h2 style="font-family:var(--font-display); font-size:1.2rem; font-weight:700; margin-bottom:2px;">{{ user.name }}</h2>
+      <p style="font-size:0.85rem; color:var(--text-secondary);">{{ user.email }}</p>
+    </div>
+    <div class="patient-info-grid" style="flex:2; min-width:280px;">
+      <div class="info-item">
+        <div class="label">Phone</div>
+        <div class="value">{{ user.phone or '—' }}</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Date of Birth</div>
+        <div class="value">{{ user.dob or '—' }}</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Blood Group</div>
+        <div class="value" style="color:var(--accent-red); font-weight:700;">{{ user.blood_group or '—' }}</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Member Since</div>
+        <div class="value">{{ user.created_at[:10] if user.created_at else '—' }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- STATS -->
+<div class="stats-grid">
+  <div class="stat-card fade-in stagger-1">
+    <div class="stat-icon cyan">📅</div>
+    <div class="stat-info">
+      <div class="stat-value">{{ appointments|length }}</div>
+      <div class="stat-label">Total Appointments</div>
+    </div>
+  </div>
+  <div class="stat-card fade-in stagger-2">
+    <div class="stat-icon blue">💊</div>
+    <div class="stat-info">
+      <div class="stat-value">{{ prescriptions|length }}</div>
+      <div class="stat-label">Prescriptions</div>
+    </div>
+  </div>
+  <div class="stat-card fade-in stagger-3">
+    <div class="stat-icon green">💳</div>
+    <div class="stat-info">
+      <div class="stat-value">{{ bills|length }}</div>
+      <div class="stat-label">Bills</div>
+    </div>
+  </div>
+  <div class="stat-card fade-in stagger-4">
+    <div class="stat-icon purple">🤖</div>
+    <div class="stat-info">
+      <div class="stat-value">AI</div>
+      <div class="stat-label">Health Assistant</div>
+    </div>
+  </div>
+</div>
+
+<!-- GRID: APPOINTMENTS + CHATBOT CTA -->
+<div class="grid-2" style="margin-bottom:24px;">
+  <!-- RECENT APPOINTMENTS -->
+  <div class="card fade-in stagger-2">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h3 style="font-family:var(--font-display); font-size:1rem; font-weight:700;">Recent Appointments</h3>
+      <a href="/appointments" class="btn btn-secondary btn-sm">View All</a>
+    </div>
+
+    {% if appointments %}
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      {% for apt in appointments %}
+      <div style="padding:14px; background:var(--glass); border:1px solid var(--glass-border); border-radius:10px; display:flex; align-items:center; gap:12px;">
+        <div style="width:40px; height:40px; border-radius:10px; background:rgba(0,229,255,0.1); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">🏥</div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-weight:600; font-size:0.875rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ apt.department }}</div>
+          <div style="font-size:0.78rem; color:var(--text-secondary);">{{ apt.doctor }} • {{ apt.date }}</div>
+        </div>
+        <span class="badge badge-cyan">{{ apt.time_slot }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:30px 20px;">
+      <div class="empty-icon">📅</div>
+      <h3>No appointments yet</h3>
+      <p style="font-size:0.82rem; margin-top:8px;">Book your first appointment today</p>
+      <a href="/book-appointment" class="btn btn-primary btn-sm" style="margin-top:12px;">Book Now</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- AI CHATBOT CTA -->
+  <div class="card fade-in stagger-3" style="background:linear-gradient(135deg, rgba(0,229,255,0.06), rgba(139,92,246,0.06)); border-color:rgba(0,229,255,0.2);">
+    <div style="text-align:center; padding:20px 10px;">
+      <div style="font-size:3rem; margin-bottom:12px; animation:botPulse 3s ease-in-out infinite;">🤖</div>
+      <h3 style="font-family:var(--font-display); font-size:1.1rem; font-weight:700; margin-bottom:8px;">AI Health Assistant</h3>
+      <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px; line-height:1.6;">
+        Describe your symptoms and get instant AI-powered analysis with medicine recommendations.
+      </p>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:20px;">
+        <span class="badge badge-cyan">🤒 Fever</span>
+        <span class="badge badge-blue">😷 Cough</span>
+        <span class="badge badge-purple">🤕 Headache</span>
+        <span class="badge badge-yellow">🤢 Stomach</span>
+      </div>
+      <a href="/chatbot" class="btn btn-primary btn-block">
+        💬 Start Chat →
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- RECENT PRESCRIPTIONS + BILLING -->
+<div class="grid-2">
+  <!-- PRESCRIPTIONS -->
+  <div class="card fade-in stagger-3">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h3 style="font-family:var(--font-display); font-size:1rem; font-weight:700;">💊 Prescriptions</h3>
+      <a href="/prescriptions" class="btn btn-secondary btn-sm">View All</a>
+    </div>
+
+    {% if prescriptions %}
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      {% for p in prescriptions %}
+      <div style="padding:14px; background:var(--glass); border:1px solid var(--glass-border); border-radius:10px;">
+        <div style="font-weight:600; font-size:0.875rem; color:var(--accent-cyan);">{{ p.diagnosis }}</div>
+        <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:4px;">{{ p.doctor }} • {{ p.issued_at[:10] if p.issued_at else '' }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:30px 20px;">
+      <div class="empty-icon">💊</div>
+      <h3>No prescriptions</h3>
+      <p style="font-size:0.82rem; margin-top:8px;">Prescriptions will appear after your appointments</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- BILLING -->
+  <div class="card fade-in stagger-4">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h3 style="font-family:var(--font-display); font-size:1rem; font-weight:700;">💳 Recent Bills</h3>
+      <a href="/billing" class="btn btn-secondary btn-sm">View All</a>
+    </div>
+
+    {% if bills %}
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      {% for b in bills %}
+      <div style="padding:14px; background:var(--glass); border:1px solid var(--glass-border); border-radius:10px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-weight:600; font-size:0.875rem;">{{ b.appointment_id }}</div>
+          <div style="font-size:0.78rem; color:var(--text-secondary);">{{ b.created_at[:10] if b.created_at else '' }}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-family:var(--font-display); font-size:1rem; font-weight:700; color:var(--accent-cyan);">₹{{ b.total }}</div>
+          <span class="badge {% if b.status == 'Paid' %}badge-green{% else %}badge-yellow{% endif %}">{{ b.status }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:30px 20px;">
+      <div class="empty-icon">💳</div>
+      <h3>No bills yet</h3>
+      <p style="font-size:0.82rem; margin-top:8px;">Bills will be generated after appointments</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+@keyframes botPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Manage Patients — Admin{% endblock %}
+
+{% block content %}
+<div class="page-header fade-in">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div>
+      <h1 class="page-title">Manage <span>Patients</span></h1>
+      <p class="page-subtitle">{{ patients|length }} patient(s) registered</p>
+    </div>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="card fade-in" style="margin-bottom:20px; padding:16px;">
+  <form method="GET" action="/admin/patients" style="display:flex; gap:10px; align-items:center;">
+    <div class="search-bar" style="flex:1; max-width:100%;">
+      <span class="search-icon">🔍</span>
+      <input type="text" name="search" value="{{ search }}" placeholder="Search by name or email..." style="background:none; border:none; outline:none; color:var(--text-primary); font-family:var(--font-body); font-size:0.875rem; flex:1;">
+    </div>
+    <button type="submit" class="btn btn-primary">Search</button>
+    {% if search %}
+    <a href="/admin/patients" class="btn btn-secondary">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+{% if patients %}
+<div class="table-container fade-in">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Patient</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Blood Group</th>
+        <th>Date of Birth</th>
+        <th>Registered</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in patients %}
+      <tr id="patient-row-{{ p.id }}">
+        <td style="color:var(--text-muted);">{{ loop.index }}</td>
+        <td>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="avatar">{{ p.name[0].upper() }}</div>
+            <span style="font-weight:500;">{{ p.name }}</span>
+          </div>
+        </td>
+        <td style="color:var(--text-secondary); font-size:0.85rem;">{{ p.email }}</td>
+        <td style="color:var(--text-secondary); font-size:0.85rem;">{{ p.phone or '—' }}</td>
+        <td>
+          {% if p.blood_group %}
+          <span class="badge badge-red">{{ p.blood_group }}</span>
+          {% else %}
+          <span style="color:var(--text-muted);">—</span>
+          {% endif %}
+        </td>
+        <td style="font-size:0.85rem; color:var(--text-secondary);">{{ p.dob or '—' }}</td>
+        <td style="font-size:0.82rem; color:var(--text-muted);">{{ p.created_at[:10] if p.created_at else '—' }}</td>
+        <td>
+          <button class="btn btn-danger btn-sm"
+                  onclick="deleteRecord('/admin/delete-patient/{{ p.id }}', 'patient-row-{{ p.id }}', 'Delete patient {{ p.name }} and all their records?')">
+            🗑️ Delete
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card fade-in">
+  <div class="empty-state">
+    <div class="empty-icon">👥</div>
+    <h3>{% if search %}No patients found for "{{ search }}"{% else %}No patients registered{% endif %}</h3>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

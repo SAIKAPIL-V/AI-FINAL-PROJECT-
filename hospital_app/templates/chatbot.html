@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}AI Chatbot — Medi Care{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chatbot.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header fade-in" style="margin-bottom:16px;">
+  <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+    <div>
+      <h1 class="page-title"><span>AI Health</span> Assistant</h1>
+      <p class="page-subtitle">Describe your symptoms for instant analysis</p>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="clearChat()">🗑️ Clear Chat</button>
+      <a href="/book-appointment" class="btn btn-primary btn-sm">📅 Book Appointment</a>
+    </div>
+  </div>
+</div>
+
+<div style="display:flex; gap:20px; align-items:flex-start;">
+  <!-- CHATBOT -->
+  <div style="flex:1; min-width:0;">
+    <div class="chatbot-container fade-in">
+      <!-- Header -->
+      <div class="chatbot-header">
+        <div class="bot-avatar">🤖</div>
+        <div class="bot-info">
+          <h3>MediBot AI</h3>
+          <div class="bot-status">
+            <div class="status-dot"></div>
+            Online & Ready
+          </div>
+        </div>
+        <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+          <span class="badge badge-green" style="font-size:0.7rem;">v2.0</span>
+          <span style="font-size:0.78rem; color:var(--text-muted);">9 Symptoms</span>
+        </div>
+      </div>
+
+      <!-- Disclaimer banner -->
+      <div class="chat-disclaimer-banner">
+        ⚠️ <strong>Medical Disclaimer:</strong>&nbsp; This AI assistant provides general health information only. Always consult a qualified doctor for diagnosis and treatment.
+      </div>
+
+      <!-- Messages -->
+      <div class="chat-messages" id="chatMessages"></div>
+
+      <!-- Input area -->
+      <div class="chat-input-area">
+        <div class="suggestion-chips">
+          <button class="chip" onclick="document.getElementById('chatInput').value='fever';sendMessage()">🤒 Fever</button>
+          <button class="chip" onclick="document.getElementById('chatInput').value='cough';sendMessage()">😷 Cough</button>
+          <button class="chip" onclick="document.getElementById('chatInput').value='headache';sendMessage()">🤕 Headache</button>
+          <button class="chip" onclick="document.getElementById('chatInput').value='chest pain';sendMessage()">💔 Chest Pain</button>
+          <button class="chip" onclick="document.getElementById('chatInput').value='stomach pain';sendMessage()">🤢 Stomach</button>
+        </div>
+        <div class="chat-input-wrapper" style="margin-top:10px;">
+          <span style="font-size:18px;">💬</span>
+          <input type="text" id="chatInput" class="chat-input" placeholder="Describe your symptoms e.g. 'I have fever for 2 days'..." maxlength="300">
+          <button id="sendBtn" class="chat-send-btn">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR INFO -->
+  <div style="width:240px; flex-shrink:0; display:flex; flex-direction:column; gap:14px;" class="fade-in stagger-2">
+    <div class="card" style="padding:18px;">
+      <h4 style="font-family:var(--font-display); font-size:0.875rem; font-weight:700; margin-bottom:12px; color:var(--accent-cyan);">Symptoms I Can Analyze</h4>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        {% for sym in ['🤒 Fever', '😷 Cough', '🤕 Headache', '💔 Chest Pain', '🤢 Stomach Pain', '🤧 Cold', '🔙 Back Pain', '🔄 Dizziness', '😰 Anxiety'] %}
+        <div style="padding:6px 10px; background:var(--glass); border-radius:8px; font-size:0.8rem; color:var(--text-secondary);">{{ sym }}</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card" style="padding:18px; background:linear-gradient(135deg, rgba(239,68,68,0.08), rgba(249,115,22,0.06)); border-color:rgba(239,68,68,0.25);">
+      <h4 style="font-family:var(--font-display); font-size:0.875rem; font-weight:700; margin-bottom:8px; color:var(--accent-red);">🚨 Emergency?</h4>
+      <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:12px; line-height:1.5;">
+        If you're experiencing a medical emergency, call immediately:
+      </p>
+      <a href="tel:108" style="display:block; padding:10px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); border-radius:8px; color:var(--accent-red); font-weight:700; text-decoration:none; text-align:center; font-size:0.9rem; margin-bottom:6px;">
+        📞 108 — Ambulance
+      </a>
+      <a href="tel:112" style="display:block; padding:10px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:8px; color:var(--accent-red); font-weight:600; text-decoration:none; text-align:center; font-size:0.85rem;">
+        📞 112 — Emergency
+      </a>
+    </div>
+
+    <div class="card" style="padding:18px;">
+      <h4 style="font-family:var(--font-display); font-size:0.875rem; font-weight:700; margin-bottom:8px;">How to Use</h4>
+      <ol style="padding-left:16px; display:flex; flex-direction:column; gap:6px; font-size:0.78rem; color:var(--text-secondary);">
+        <li>Type your symptom</li>
+        <li>Answer follow-up questions</li>
+        <li>Get diagnosis + medicines</li>
+        <li>Book appointment if needed</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Billing — Medi Care{% endblock %}
+
+{% block content %}
+<div class="page-header fade-in">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div>
+      <h1 class="page-title">My <span>Bills</span></h1>
+      <p class="page-subtitle">{{ bills|length }} bill(s) on record</p>
+    </div>
+  </div>
+</div>
+
+{% if bills %}
+<div style="display:flex; flex-direction:column; gap:16px;">
+  {% for b in bills %}
+  <div class="card fade-in" style="animation-delay:{{ loop.index0 * 80 }}ms;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+
+      <!-- Left: Bill Info -->
+      <div>
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+          <div style="width:50px; height:50px; border-radius:14px; background:rgba(0,229,255,0.1); display:flex; align-items:center; justify-content:center; font-size:22px;">💳</div>
+          <div>
+            <code style="color:var(--accent-cyan); font-size:0.9rem; font-weight:700;">{{ b.appointment_id }}</code>
+            <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:2px;">{{ b.date or b.created_at[:10] }}</div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+          {% if b.department %}<span class="badge badge-blue">{{ b.department }}</span>{% endif %}
+          {% if b.doctor %}<span class="badge badge-purple">{{ b.doctor }}</span>{% endif %}
+          <span class="badge {% if b.status == 'Paid' %}badge-green{% else %}badge-yellow{% endif %}">
+            {% if b.status == 'Paid' %}✅{% else %}⏳{% endif %} {{ b.status }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Right: Amount Breakdown -->
+      <div style="min-width:220px; background:var(--glass); border:1px solid var(--glass-border); border-radius:12px; padding:16px;">
+        <div style="font-size:0.72rem; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); margin-bottom:12px;">Bill Summary</div>
+
+        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; font-size:0.875rem;">
+            <span style="color:var(--text-secondary);">🩺 Consultation Fee</span>
+            <strong>₹{{ b.consultation_fee }}</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:0.875rem;">
+            <span style="color:var(--text-secondary);">💊 Medicine Cost</span>
+            <strong>₹{{ b.medicine_cost }}</strong>
+          </div>
+          <div style="height:1px; background:var(--glass-border); margin:4px 0;"></div>
+          <div style="display:flex; justify-content:space-between; font-size:1rem;">
+            <span style="font-weight:600;">Total</span>
+            <strong style="color:var(--accent-cyan); font-size:1.1rem; font-family:var(--font-display);">₹{{ b.total }}</strong>
+          </div>
+        </div>
+
+        <a href="/download-bill/{{ b.id }}" class="btn btn-secondary btn-sm btn-block">
+          ⬇️ Download Bill
+        </a>
+      </div>
+
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card fade-in">
+  <div class="empty-state">
+    <div class="empty-icon">💳</div>
+    <h3>No bills yet</h3>
+    <p>Consultation bill appears at booking. Medicine bill is added after doctor consultation is completed.</p>
+    <a href="/book-appointment" class="btn btn-primary" style="margin-top:16px;">Book an Appointment</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

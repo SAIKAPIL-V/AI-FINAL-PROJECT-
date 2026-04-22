@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — Medi Care{% endblock %}
+
+{% block content %}
+<div class="page-header fade-in">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div>
+      <h1 class="page-title">Admin <span>Dashboard</span></h1>
+      <p class="page-subtitle">Hospital overview & management</p>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <span class="badge badge-red" style="padding:8px 14px; font-size:0.78rem;">🔑 Admin Mode</span>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+  <div class="stat-card fade-in stagger-1">
+    <div class="stat-icon cyan">👥</div>
+    <div class="stat-info">
+      <div class="stat-value">{{ total_patients }}</div>
+      <div class="stat-label">Total Patients</div>
+    </div>
+  </div>
+  <div class="stat-card fade-in stagger-2">
+    <div class="stat-icon blue">📅</div>
+    <div class="stat-info">
+      <div class="stat-value">{{ total_appointments }}</div>
+      <div class="stat-label">Appointments</div>
+    </div>
+  </div>
+  <div class="stat-card fade-in stagger-3">
+    <div class="stat-icon purple">💊</div>
+    <div class="stat-info">
+      <div class="stat-value">{{ total_prescriptions }}</div>
+      <div class="stat-label">Prescriptions</div>
+    </div>
+  </div>
+  <div class="stat-card fade-in stagger-4">
+    <div class="stat-icon green">💰</div>
+    <div class="stat-info">
+      <div class="stat-value">₹{{ total_revenue }}</div>
+      <div class="stat-label">Total Revenue</div>
+    </div>
+  </div>
+</div>
+
+<!-- QUICK LINKS -->
+<div class="grid-2" style="margin-bottom:24px;">
+  <a href="/admin/patients" class="card fade-in stagger-2" style="text-decoration:none; display:flex; align-items:center; gap:16px; cursor:pointer;">
+    <div style="width:56px; height:56px; border-radius:16px; background:rgba(0,229,255,0.1); display:flex; align-items:center; justify-content:center; font-size:24px;">👥</div>
+    <div>
+      <div style="font-family:var(--font-display); font-weight:700; margin-bottom:2px;">Manage Patients</div>
+      <div style="font-size:0.82rem; color:var(--text-secondary);">View, search & delete patient records</div>
+    </div>
+    <div style="margin-left:auto; color:var(--text-muted);">→</div>
+  </a>
+  <a href="/admin/appointments" class="card fade-in stagger-3" style="text-decoration:none; display:flex; align-items:center; gap:16px; cursor:pointer;">
+    <div style="width:56px; height:56px; border-radius:16px; background:rgba(74,158,255,0.1); display:flex; align-items:center; justify-content:center; font-size:24px;">📅</div>
+    <div>
+      <div style="font-family:var(--font-display); font-weight:700; margin-bottom:2px;">Manage Appointments</div>
+      <div style="font-size:0.82rem; color:var(--text-secondary);">View & manage all scheduled appointments</div>
+    </div>
+    <div style="margin-left:auto; color:var(--text-muted);">→</div>
+  </a>
+</div>
+
+<!-- RECENT APPOINTMENTS -->
+<div class="card fade-in stagger-3">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h3 style="font-family:var(--font-display); font-weight:700; font-size:1rem;">📋 Recent Appointments</h3>
+    <a href="/admin/appointments" class="btn btn-secondary btn-sm">View All →</a>
+  </div>
+
+  {% if recent_apts %}
+  <div class="table-container" style="box-shadow:none; border:none;">
+    <table class="table" style="background:transparent;">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Patient</th>
+          <th>Department</th>
+          <th>Doctor</th>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for apt in recent_apts %}
+        <tr>
+          <td><code style="color:var(--accent-cyan); font-size:0.78rem;">{{ apt.appointment_id }}</code></td>
+          <td>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div class="avatar" style="width:30px; height:30px; font-size:0.75rem;">{{ apt.patient_name[0] if apt.patient_name else '?' }}</div>
+              <span style="font-size:0.875rem;">{{ apt.patient_name }}</span>
+            </div>
+          </td>
+          <td style="font-size:0.875rem;">{{ apt.department }}</td>
+          <td style="font-size:0.875rem; color:var(--text-secondary);">{{ apt.doctor }}</td>
+          <td style="font-size:0.875rem;">{{ apt.date }}</td>
+          <td><span class="badge badge-blue" style="font-size:0.72rem;">{{ apt.time_slot }}</span></td>
+          <td><span class="badge badge-green" style="font-size:0.72rem;">{{ apt.status }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:30px;">
+    <div class="empty-icon">📅</div>
+    <h3>No appointments yet</h3>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

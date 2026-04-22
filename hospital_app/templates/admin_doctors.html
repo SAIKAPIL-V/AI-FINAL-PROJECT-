@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Doctors — Admin{% endblock %}
+
+{% block content %}
+<div class="page-header fade-in">
+  <h1 class="page-title">Doctor <span>Accounts</span></h1>
+  <p class="page-subtitle">Admin access to all doctors and workloads</p>
+</div>
+
+<div class="card fade-in" style="margin-bottom:16px;">
+  <h3 style="font-family:var(--font-display); margin-bottom:14px;">➕ Create Doctor Account</h3>
+  <form method="POST" action="/admin/doctors/create" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px;">
+    <input class="form-control" type="text" name="name" placeholder="Doctor Name" required>
+    <input class="form-control" type="email" name="email" placeholder="Doctor Email" required>
+    <select class="form-control" name="department" required>
+      <option value="">Department</option>
+      <option>General</option>
+      <option>Cardiology</option>
+      <option>Orthopedics</option>
+      <option>Neurology</option>
+      <option>Pediatrics</option>
+      <option>ENT</option>
+    </select>
+    <input class="form-control" type="number" name="max_patients_per_day" value="8" min="1" required>
+    <input class="form-control" type="number" name="slot_duration_minutes" value="30" min="15" step="5" required>
+    <input class="form-control" type="text" name="password" value="doctor123" required>
+    <button class="btn btn-primary" type="submit">Create Doctor</button>
+  </form>
+</div>
+
+<div class="table-container fade-in">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Department</th>
+        <th>Max/Day</th>
+        <th>Slot (min)</th>
+        <th>Status</th>
+        <th>Total Appointments</th>
+        <th>Completed</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in doctors %}
+      <tr onclick="window.location.href='/admin/doctors/{{ d.id }}'" style="cursor:pointer;">
+        <td>{{ d.name }}</td>
+        <td style="color:var(--text-secondary);">{{ d.email }}</td>
+        <td><span class="badge badge-blue">{{ d.department }}</span></td>
+        <td>{{ d.max_patients_per_day or 8 }}</td>
+        <td>{{ d.slot_duration_minutes or 30 }}</td>
+        <td>
+          <span class="badge {% if d.is_active %}badge-green{% else %}badge-red{% endif %}">
+            {% if d.is_active %}Active{% else %}Inactive{% endif %}
+          </span>
+        </td>
+        <td>{{ d.total_appointments or 0 }}</td>
+        <td>{{ d.completed_appointments or 0 }}</td>
+        <td style="min-width:240px;">
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <a class="btn btn-secondary btn-sm" href="/admin/doctors/{{ d.id }}" onclick="event.stopPropagation();">Profile</a>
+            <button class="btn btn-primary btn-sm js-edit-doctor" type="button"
+                    data-id="{{ d.id }}"
+                    data-name="{{ d.name|e }}"
+                    data-email="{{ d.email|e }}"
+                    data-department="{{ d.department|e }}"
+                    data-max="{{ d.max_patients_per_day or 8 }}"
+                    data-slot="{{ d.slot_duration_minutes or 30 }}">
+              Edit
+            </button>
+            <form method="POST" action="/admin/doctors/{{ d.id }}/toggle-active" style="display:inline;" class="js-stop-row-click">
+              <button class="btn btn-secondary btn-sm" type="submit">{% if d.is_active %}Deactivate{% else %}Activate{% endif %}</button>
+            </form>
+            <button class="btn btn-danger btn-sm js-reset-password" type="button" data-id="{{ d.id }}">Reset PW</button>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card fade-in" style="margin-top:16px;">
+  <p style="font-size:0.86rem; color:var(--text-secondary);">
+    Default doctor login password for seeded accounts: <strong style="color:var(--accent-cyan);">doctor123</strong>
+  </p>
+</div>
+
+<script>
+  function postForm(action, fields) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = action;
+    Object.entries(fields).forEach(([k, v]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = k;
+      input.value = String(v);
+      form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
+  }
+
+  function editDoctor(id, name, email, department, maxPatients, slotDuration) {
+    const newName = prompt('Doctor Name:', name);
+    if (newName === null) return;
+    const newEmail = prompt('Doctor Email:', email);
+    if (newEmail === null) return;
+    const newDepartment = prompt('Department (General/Cardiology/Orthopedics/Neurology/Pediatrics/ENT):', department);
+    if (newDepartment === null) return;
+    const newMax = prompt('Max patients per day:', String(maxPatients));
+    if (newMax === null) return;
+    const newSlot = prompt('Slot duration minutes:', String(slotDuration));
+    if (newSlot === null) return;
+
+    postForm(`/admin/doctors/${id}/update`, {
+      name: newName.trim(),
+      email: newEmail.trim(),
+      department: newDepartment.trim(),
+      max_patients_per_day: newMax.trim(),
+      slot_duration_minutes: newSlot.trim()
+    });
+  }
+
+  function resetDoctorPassword(id) {
+    const pw = prompt('Enter new password (min 6 chars):', 'doctor123');
+    if (pw === null) return;
+    postForm(`/admin/doctors/${id}/reset-password`, { new_password: pw.trim() });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.js-edit-doctor').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        editDoctor(
+          Number(btn.dataset.id),
+          btn.dataset.name || '',
+          btn.dataset.email || '',
+          btn.dataset.department || '',
+          Number(btn.dataset.max || 8),
+          Number(btn.dataset.slot || 30)
+        );
+      });
+    });
+
+    document.querySelectorAll('.js-reset-password').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        resetDoctorPassword(Number(btn.dataset.id));
+      });
+    });
+
+    document.querySelectorAll('.js-stop-row-click').forEach(form => {
+      form.addEventListener('click', e => e.stopPropagation());
+    });
+  });
+</script>
+{% endblock %}
